@@ -1,27 +1,3 @@
-[Containments][358][General]
-AppletOrder=359;360;361;386;362;375;376
-
-[Containments][358][Applets][386]
-plugin=org.kde.plasma.kvitals
-immutability=1
-
-[Containments][358][Applets][386][Configuration]
-popupHeight=375
-popupWidth=432
-
-[Containments][358][Applets][386][Configuration][General]
-displayMode=text
-fontFamily=SF Pro Text 10pt
-iconSize=14
-labelOpacity=1
-pinnedMetrics=cpu/temp,gpu:gpu0/temp,disk:nvme0n1/temp,net/up,net/down
-separatorOpacity=0
-showSeparators=false
-updateInterval=3000
-
-[Containments][377][Applets][380][Configuration][General]
-launchers=applications:systemsettings.desktop,applications:org.kde.discover.desktop,preferred://filemanager,applications:org.localsend.localsend_app.desktop,preferred://browser,applications:com.mitchellh.ghostty.desktop,applications:com.visualstudio.code.desktop,applications:zcode.desktop
-
 [Containments][280]
 wallpaperplugin=org.kde.potd
 

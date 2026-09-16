@@ -18,6 +18,12 @@ KV_DEST="$HOME/.local/share/plasma/plasmoids/$KV_ID"
 TRANSPARENCY=90
 DOCK=12
 
+DOCK_THICKNESS=64
+DOCK_PINS="applications:systemsettings.desktop,applications:org.kde.discover.desktop,preferred://filemanager,applications:org.localsend.localsend_app.desktop,preferred://browser,applications:com.mitchellh.ghostty.desktop,applications:com.visualstudio.code.desktop,applications:zcode.desktop"
+KV_METRICS="cpu/temp,gpu:gpu0/temp,disk:nvme0n1/temp,net/up,net/down"
+
+QDBUS=""
+
 die() { printf '错误：%s\n' "$1" >&2; exit 1; }
 
 kvitals_fetch() {
@@ -74,6 +80,111 @@ apply_transparency() {
     python3 "$script" "$TRANSPARENCY" --dock "$DOCK" --apply
 }
 
+ensure_qdbus() {
+    [ -n "$QDBUS" ] && return 0
+    local c
+    for c in qdbus6 qdbus-qt6 qdbus; do
+        if command -v "$c" >/dev/null 2>&1; then
+            QDBUS="$c"
+            return 0
+        fi
+    done
+    die "找不到 qdbus，先装 qt6-qttools"
+}
+
+layout_script() {
+    cat <<EOF
+(function () {
+  var metrics = "$KV_METRICS";
+  var pins = "$DOCK_PINS";
+  var ps = panels();
+  for (var i = 0; i < ps.length; i++) {
+    var p = ps[i];
+    var ids = p.widgetIds;
+    var dock = false;
+    var bar = false;
+    for (var j = 0; j < ids.length; j++) {
+      var t = p.widgetById(ids[j]);
+      if (!t) continue;
+      if (t.type === "org.kde.mac.tahoe.liquid.icontasks") dock = true;
+      if (t.type === "org.kde.plasma.digitalclock") bar = true;
+    }
+    if (dock) {
+      p.location = "left";
+      p.height = $DOCK_THICKNESS;
+      p.hiding = "none";
+      for (var j = 0; j < ids.length; j++) {
+        var w = p.widgetById(ids[j]);
+        if (w && w.type === "org.kde.mac.tahoe.liquid.icontasks") {
+          w.currentConfigGroup = ["General"];
+          w.writeConfig("launchers", pins);
+        }
+      }
+    }
+    if (bar) {
+      var kv = null;
+      for (var j = 0; j < ids.length; j++) {
+        var w = p.widgetById(ids[j]);
+        if (w && w.type === "org.kde.plasma.kvitals") kv = w;
+      }
+      if (!kv && p.addWidget) kv = p.addWidget("org.kde.plasma.kvitals");
+      if (kv) {
+        kv.currentConfigGroup = ["General"];
+        kv.writeConfig("displayMode", "text");
+        kv.writeConfig("fontFamily", "SF Pro Text 10pt");
+        kv.writeConfig("iconSize", 14);
+        kv.writeConfig("labelOpacity", 1);
+        kv.writeConfig("pinnedMetrics", metrics);
+        kv.writeConfig("separatorOpacity", 0);
+        kv.writeConfig("showSeparators", false);
+        kv.writeConfig("updateInterval", 3000);
+        kv.currentConfigGroup = [];
+        kv.writeConfig("popupHeight", 375);
+        kv.writeConfig("popupWidth", 432);
+        var kvId = kv.id;
+        var order = [];
+        var placed = false;
+        for (var j = 0; j < ids.length; j++) {
+          var w = p.widgetById(ids[j]);
+          if (!w || w.id === kvId) continue;
+          if (!placed && w.type === "org.kde.plasma.systemtray") {
+            order.push(kvId);
+            placed = true;
+          }
+          order.push(ids[j]);
+        }
+        if (!placed) order.unshift(kvId);
+        p.currentConfigGroup = ["General"];
+        p.writeConfig("AppletOrder", order.join(";"));
+      }
+    }
+  }
+})();
+EOF
+}
+
+run_layout_script() {
+    local script="$1" n=0
+    for n in 1 2 3 4 5; do
+        if "$QDBUS" org.kde.plasmashell /PlasmaShell \
+             org.kde.PlasmaShell.evaluateScript "$script" >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep 3
+    done
+    return 1
+}
+
+apply_layout() {
+    ensure_qdbus
+    printf '  面板归位：dock 靠左常显 %spx，KVitals 进顶栏\n' "$DOCK_THICKNESS"
+    local script
+    script="$(layout_script)"
+    run_layout_script "$script" || die "plasmashell 不接受脚本，面板没动"
+    sleep 2
+    run_layout_script "$script" || die "plasmashell 不接受脚本，面板没动"
+}
+
 cmd_restart() {
     printf '==> 重启 plasmashell\n'
     stop_plasmashell
@@ -117,6 +228,10 @@ cmd_personal() {
 
     printf '==> 主题调参\n'
     apply_transparency
+
+    printf '==> 面板布局\n'
+    apply_layout
+    cmd_restart
 }
 
 case "${1:-}" in

@@ -19,6 +19,8 @@ help:
 	@echo "  make personal    应用个人配置"
 	@echo "                   desktop-personal/ 里写着的键才写过去，没写的一律不碰"
 	@echo "                   要加什么，从 ~/.config/ 里同名文件拷段和键过来"
+	@echo "                   面板相关的（dock 靠左、厚度、钉的应用、顶栏 KVitals）"
+	@echo "                   改 desktop.sh 顶部的变量"
 	@echo ""
 	@echo "  make light       切浅色"
 	@echo "  make dark        切深色"
