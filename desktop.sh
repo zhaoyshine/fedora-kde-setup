@@ -4,8 +4,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$ROOT/macos-tahoe-liquid-kde"
-PERSONAL_DIR="$ROOT/desktop-personal"
-APPLY_PY="$ROOT/apply-personal.py"
+DOTFILES="$ROOT/dotfiles"
 CONFIG_DIR="$HOME/.config"
 
 KV_ID="org.kde.plasma.kvitals"
@@ -15,9 +14,9 @@ KV_SHA="14126ce5ff447236566bee529db0850495d3bfa4c0b520c74c553d347364abac"
 KV_PKG="$ROOT/kvitals/$KV_ID-$KV_VER.plasmoid"
 KV_DEST="$HOME/.local/share/plasma/plasmoids/$KV_ID"
 
-TRANSPARENCY=90
-DOCK=12
-
+# 布局默认值，只影响 install / update 时的 apply
+OPACITY=90
+DOCK_OPACITY=12
 DOCK_THICKNESS=64
 DOCK_PINS="applications:systemsettings.desktop,applications:org.kde.discover.desktop,preferred://filemanager,applications:org.localsend.localsend_app.desktop,preferred://browser,applications:com.mitchellh.ghostty.desktop,applications:com.visualstudio.code.desktop,applications:zcode.desktop"
 KV_METRICS="cpu/temp,gpu:gpu0/temp,disk:nvme0n1/temp,net/up,net/down"
@@ -25,6 +24,11 @@ KV_METRICS="cpu/temp,gpu:gpu0/temp,disk:nvme0n1/temp,net/up,net/down"
 QDBUS=""
 
 die() { printf '错误：%s\n' "$1" >&2; exit 1; }
+
+ensure_chezmoi() {
+    command -v chezmoi >/dev/null || die "找不到 chezmoi，先装：sudo dnf install chezmoi"
+    [ -d "$DOTFILES" ] || die "找不到 $DOTFILES，仓库是不是不完整？"
+}
 
 kvitals_fetch() {
     if [ -f "$KV_PKG" ] && \
@@ -76,8 +80,8 @@ start_plasmashell() {
 apply_transparency() {
     local script="$REPO/src/scripts/set-transparency"
     [ -f "$script" ] || die "找不到 $script（上游仓库是不是没拉全？）"
-    printf '  应用透明度 %s%%（dock %s%%）\n' "$TRANSPARENCY" "$DOCK"
-    python3 "$script" "$TRANSPARENCY" --dock "$DOCK" --apply
+    printf '  应用透明度：全局 %s%%，dock %s%%\n' "$OPACITY" "$DOCK_OPACITY"
+    python3 "$script" "$OPACITY" --dock "$DOCK_OPACITY" --apply
 }
 
 ensure_qdbus() {
@@ -185,58 +189,65 @@ apply_layout() {
     run_layout_script "$script" || die "plasmashell 不接受脚本，面板没动"
 }
 
-cmd_restart() {
-    printf '==> 重启 plasmashell\n'
+cmd_apply() {
+    printf '==> 重启 plasmashell，让主题生效\n'
     stop_plasmashell
     start_plasmashell
-}
 
-cmd_kvitals() {
-    kvitals_install
-}
-
-apply_personal_files() {
-    local src name dst any=0
-    for src in "$PERSONAL_DIR"/*; do
-        [ -f "$src" ] || continue
-        any=1
-        name="$(basename "$src")"
-        dst="$CONFIG_DIR/$name"
-        if [ ! -f "$dst" ]; then
-            printf '  跳过 %s：%s 不存在\n' "$name" "$dst"
-            continue
-        fi
-        printf '%s\n' "$name"
-        python3 "$APPLY_PY" "$src" "$dst"
-    done
-    [ "$any" = 1 ] || die "$PERSONAL_DIR 里没有配置文件"
-}
-
-cmd_personal() {
-    printf '==> 确保 KVitals 在\n'
+    printf '==> 装 KVitals\n'
     kvitals_install
 
-    mkdir -p "$CONFIG_DIR"
-    local bak="$CONFIG_DIR/plasma-org.kde.plasma.desktop-appletsrc.bak.$(date +%Y%m%d-%H%M%S)"
-    cp -f "$CONFIG_DIR/plasma-org.kde.plasma.desktop-appletsrc" "$bak" 2>/dev/null || true
-    printf '  改之前的配置备份到 %s\n' "${bak#"$HOME"/}"
-
-    printf '==> 应用个人配置（只写 desktop-personal/ 里有的键）\n'
+    printf '==> 重启 plasmashell，让 plasmoid 注册\n'
     stop_plasmashell
-    apply_personal_files
     start_plasmashell
-
-    printf '==> 主题调参\n'
-    apply_transparency
 
     printf '==> 面板布局\n'
     apply_layout
-    cmd_restart
+
+    printf '==> 主题调参\n'
+    apply_transparency
+}
+
+cmd_restore() {
+    ensure_chezmoi
+
+    local drift answer
+    drift="$(chezmoi -S "$DOTFILES" diff 2>&1)" || die "chezmoi diff 失败"
+    if [ -n "$drift" ]; then
+        printf '==> 检测到漂移：本地配置和仓库快照不一致\n'
+        printf '（每行截到 200 字符，完整 diff 用 chezmoi -S dotfiles diff 看）\n'
+        printf '%s\n' "$drift" | sed 's/^/  /' | cut -c1-200
+        printf '继续会用仓库快照覆盖本地配置。建议先 make backup 把 GUI 改动固化进仓库。\n'
+        printf '继续覆盖？(y/N) '
+        read -r answer
+        case "$answer" in
+            y|Y|yes|YES) ;;
+            *) die "已取消，本地配置未动" ;;
+        esac
+    fi
+
+    printf '==> 恢复配置快照\n'
+    stop_plasmashell
+    chezmoi -S "$DOTFILES" apply --force
+    start_plasmashell
+}
+
+cmd_backup() {
+    ensure_chezmoi
+    local src="$CONFIG_DIR/plasma-org.kde.plasma.desktop-appletsrc"
+    [ -f "$src" ] || die "$src 不存在"
+    printf '==> 把 live 配置回写进仓库快照\n'
+    chezmoi -S "$DOTFILES" add "$src"
+    printf '==> 快照已刷新。仓库里的改动如下，审阅后 git commit：\n'
+    git -C "$ROOT" status --short -- dotfiles/
+    git -C "$ROOT" diff -- dotfiles/
+    printf '（上面没输出的话说明快照没变，不用提交）\n'
 }
 
 case "${1:-}" in
-    personal) cmd_personal ;;
-    kvitals)  cmd_kvitals ;;
-    restart)  cmd_restart ;;
-    *) printf '用法：%s {personal|kvitals|restart}\n' "${BASH_SOURCE[0]##*/}" >&2; exit 1 ;;
+    apply)   cmd_apply ;;
+    kvitals) kvitals_install ;;
+    restore) cmd_restore ;;
+    backup)  cmd_backup ;;
+    *) printf '用法：%s {apply|kvitals|restore|backup}\n' "${BASH_SOURCE[0]##*/}" >&2; exit 1 ;;
 esac

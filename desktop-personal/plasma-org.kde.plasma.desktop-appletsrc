@@ -1,6 +1,0 @@
-[Containments][280]
-wallpaperplugin=org.kde.potd
-
-[Containments][280][Wallpaper][org.kde.potd][General]
-FillMode=1
-Provider=bing
