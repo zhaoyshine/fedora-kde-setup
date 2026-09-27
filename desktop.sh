@@ -7,6 +7,15 @@ REPO="$ROOT/macos-tahoe-liquid-kde"
 DOTFILES="$ROOT/dotfiles"
 CONFIG_DIR="$HOME/.config"
 
+MANAGED_FILES=(
+    "$CONFIG_DIR/plasma-org.kde.plasma.desktop-appletsrc"
+    "$CONFIG_DIR/fcitx5/config"
+    "$CONFIG_DIR/fcitx5/profile"
+    "$CONFIG_DIR/environment.d/fcitx5.conf"
+    "$CONFIG_DIR/powerdevilrc"
+)
+
+# KVitals 插件 id 与版本，升级时同步更新下方下载地址和校验和
 KV_ID="org.kde.plasma.kvitals"
 KV_VER="v3.1.2"
 KV_URL="https://github.com/yassine20011/kvitals/releases/download/$KV_VER/$KV_ID-$KV_VER.plasmoid"
@@ -14,7 +23,7 @@ KV_SHA="14126ce5ff447236566bee529db0850495d3bfa4c0b520c74c553d347364abac"
 KV_PKG="$ROOT/kvitals/$KV_ID-$KV_VER.plasmoid"
 KV_DEST="$HOME/.local/share/plasma/plasmoids/$KV_ID"
 
-# 布局默认值，只影响 install / update 时的 apply
+# 布局默认值，仅 theme-install / theme-update 执行 apply 时生效
 OPACITY=90
 DOCK_OPACITY=12
 DOCK_THICKNESS=64
@@ -26,8 +35,8 @@ QDBUS=""
 die() { printf '错误：%s\n' "$1" >&2; exit 1; }
 
 ensure_chezmoi() {
-    command -v chezmoi >/dev/null || die "找不到 chezmoi，先装：sudo dnf install chezmoi"
-    [ -d "$DOTFILES" ] || die "找不到 $DOTFILES，仓库是不是不完整？"
+    command -v chezmoi >/dev/null || die "未找到 chezmoi，请先安装：sudo dnf install chezmoi"
+    [ -d "$DOTFILES" ] || die "未找到 $DOTFILES，仓库不完整"
 }
 
 kvitals_fetch() {
@@ -40,23 +49,23 @@ kvitals_fetch() {
     printf '  [下载] KVitals %s\n' "$KV_VER"
     curl -fL --retry 5 -o "$KV_PKG.part" "$KV_URL" || {
         rm -f "$KV_PKG.part"
-        die "下载失败。GitHub 走不通的话先跑 ssr 开代理再试"
+        die "下载失败，若无法访问 GitHub 请先启动 ssr 代理后重试"
     }
     echo "$KV_SHA  $KV_PKG.part" | sha256sum -c - >/dev/null || {
         rm -f "$KV_PKG.part"
-        die "校验失败，已丢弃"
+        die "校验失败，文件已删除"
     }
     mv "$KV_PKG.part" "$KV_PKG"
-    printf '  已下载并校验\n'
+    printf '  [完成] 下载并校验通过\n'
 }
 
 kvitals_install() {
     if [ -d "$KV_DEST" ]; then
-        printf '  KVitals 已装，跳过\n'
+        printf '  [跳过] KVitals 已安装\n'
         return 0
     fi
     kvitals_fetch
-    printf '  装 KVitals %s\n' "$KV_VER"
+    printf '  [安装] KVitals %s\n' "$KV_VER"
     kpackagetool6 --type Plasma/Applet --install "$KV_PKG"
 }
 
@@ -67,7 +76,7 @@ stop_plasmashell() {
         pgrep -x plasmashell >/dev/null || return 0
         sleep 0.25
     done
-    printf '  plasmashell 不肯退，强杀\n' >&2
+    printf '  [警告] plasmashell 退出超时，强制结束\n' >&2
     pkill -x plasmashell || true
     sleep 1
 }
@@ -79,7 +88,7 @@ start_plasmashell() {
 
 apply_transparency() {
     local script="$REPO/src/scripts/set-transparency"
-    [ -f "$script" ] || die "找不到 $script（上游仓库是不是没拉全？）"
+    [ -f "$script" ] || { printf '  [失败] 未找到 %s（上游仓库可能未拉取完整）\n' "$script" >&2; exit 1; }
     printf '  应用透明度：全局 %s%%，dock %s%%\n' "$OPACITY" "$DOCK_OPACITY"
     python3 "$script" "$OPACITY" --dock "$DOCK_OPACITY" --apply
 }
@@ -93,7 +102,7 @@ ensure_qdbus() {
             return 0
         fi
     done
-    die "找不到 qdbus，先装 qt6-qttools"
+    die "未找到 qdbus，请先安装 qt6-qttools"
 }
 
 layout_script() {
@@ -181,30 +190,30 @@ run_layout_script() {
 
 apply_layout() {
     ensure_qdbus
-    printf '  面板归位：dock 靠左常显 %spx，KVitals 进顶栏\n' "$DOCK_THICKNESS"
+    printf '  [改动] 面板布局：dock 靠左常显 %spx，KVitals 置顶栏\n' "$DOCK_THICKNESS"
     local script
     script="$(layout_script)"
-    run_layout_script "$script" || die "plasmashell 不接受脚本，面板没动"
+    run_layout_script "$script" || die "plasmashell 拒绝执行脚本，面板布局未变更"
     sleep 2
-    run_layout_script "$script" || die "plasmashell 不接受脚本，面板没动"
+    run_layout_script "$script" || die "plasmashell 拒绝执行脚本，面板布局未变更"
 }
 
 cmd_apply() {
-    printf '==> 重启 plasmashell，让主题生效\n'
+    printf '==> 重启 plasmashell，使主题生效\n'
     stop_plasmashell
     start_plasmashell
 
-    printf '==> 装 KVitals\n'
+    printf '==> 安装 KVitals\n'
     kvitals_install
 
-    printf '==> 重启 plasmashell，让 plasmoid 注册\n'
+    printf '==> 重启 plasmashell，注册 plasmoid\n'
     stop_plasmashell
     start_plasmashell
 
     printf '==> 面板布局\n'
     apply_layout
 
-    printf '==> 主题调参\n'
+    printf '==> 应用主题参数\n'
     apply_transparency
 }
 
@@ -212,17 +221,19 @@ cmd_restore() {
     ensure_chezmoi
 
     local drift answer
-    drift="$(chezmoi -S "$DOTFILES" diff 2>&1)" || die "chezmoi diff 失败"
+    if ! drift="$(chezmoi -S "$DOTFILES" diff 2>&1)"; then
+        die "chezmoi diff 执行失败"
+    fi
     if [ -n "$drift" ]; then
         printf '==> 检测到漂移：本地配置和仓库快照不一致\n'
-        printf '（每行截到 200 字符，完整 diff 用 chezmoi -S dotfiles diff 看）\n'
+        printf '（每行截断至 200 字符，完整 diff 执行 chezmoi -S dotfiles diff 查看）\n'
         printf '%s\n' "$drift" | sed 's/^/  /' | cut -c1-200
-        printf '继续会用仓库快照覆盖本地配置。建议先 make backup 把 GUI 改动固化进仓库。\n'
+        printf '继续将用仓库快照覆盖本地配置，建议先执行 make backup 固化 GUI 改动\n'
         printf '继续覆盖？(y/N) '
         read -r answer
         case "$answer" in
             y|Y|yes|YES) ;;
-            *) die "已取消，本地配置未动" ;;
+            *) die "已取消，本地配置未修改" ;;
         esac
     fi
 
@@ -234,14 +245,19 @@ cmd_restore() {
 
 cmd_backup() {
     ensure_chezmoi
-    local src="$CONFIG_DIR/plasma-org.kde.plasma.desktop-appletsrc"
-    [ -f "$src" ] || die "$src 不存在"
-    printf '==> 把 live 配置回写进仓库快照\n'
-    chezmoi -S "$DOTFILES" add "$src"
-    printf '==> 快照已刷新。仓库里的改动如下，审阅后 git commit：\n'
+    printf '==> 将当前配置回写至仓库快照\n'
+    local src
+    for src in "${MANAGED_FILES[@]}"; do
+        if [ -f "$src" ]; then
+            chezmoi -S "$DOTFILES" add "$src"
+        else
+            printf '  [跳过] %s 不存在\n' "$src"
+        fi
+    done
+    printf '==> 快照已更新，仓库改动如下，请审阅后执行 git commit：\n'
     git -C "$ROOT" status --short -- dotfiles/
     git -C "$ROOT" diff -- dotfiles/
-    printf '（上面没输出的话说明快照没变，不用提交）\n'
+    printf '（无输出表示快照未变更，无需提交）\n'
 }
 
 case "${1:-}" in
