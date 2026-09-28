@@ -33,6 +33,8 @@ make restore         # 用 dotfiles/ 恢复设置
 | `~/.config/fcitx5/config` | 输入法热键与行为 |
 | `~/.config/fcitx5/profile` | 输入法组与顺序 |
 | `~/.config/environment.d/fcitx5.conf` | `XMODIFIERS`（XWayland 程序依赖它获取输入法） |
+| `~/.config/ghostty/config.ghostty` | Ghostty 键位绑定、初始命令、scrollback |
+| `~/.config/kxkbrc` | 键盘布局与修饰键交换（左右 Ctrl/Alt） |
 | `~/.config/powerdevilrc` | 屏幕变暗、息屏、休眠策略 |
 
 - `theme-install` / `theme-update` / `restore` 之后必须注销并重新登录。

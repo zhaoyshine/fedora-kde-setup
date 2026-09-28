@@ -12,6 +12,8 @@ MANAGED_FILES=(
     "$CONFIG_DIR/fcitx5/config"
     "$CONFIG_DIR/fcitx5/profile"
     "$CONFIG_DIR/environment.d/fcitx5.conf"
+    "$CONFIG_DIR/ghostty/config.ghostty"
+    "$CONFIG_DIR/kxkbrc"
     "$CONFIG_DIR/powerdevilrc"
 )
 
