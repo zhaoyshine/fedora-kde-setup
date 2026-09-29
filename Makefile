@@ -8,7 +8,7 @@ FLAGS := --light --no-firefox --no-plymouth --no-nautilus
 
 help:
 	@echo ""
-	@echo "  make setup           系统配置（dnf、flatpak 源、开机项），不安装软件包"
+	@echo "  make setup           系统配置（dnf、flatpak 源、开机项、zram 与 swap），不安装软件包"
 	@echo "  make install         安装软件（基础工具、输入法、应用）"
 	@echo ""
 	@echo "  make theme-pull      拉取/更新主题仓库"

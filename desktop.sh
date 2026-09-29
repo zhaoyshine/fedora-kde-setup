@@ -14,6 +14,8 @@ MANAGED_FILES=(
     "$CONFIG_DIR/environment.d/fcitx5.conf"
     "$CONFIG_DIR/ghostty/config.ghostty"
     "$CONFIG_DIR/kxkbrc"
+    "$CONFIG_DIR/kwinrc"
+    "$CONFIG_DIR/kwinrulesrc"
     "$CONFIG_DIR/powerdevilrc"
 )
 
@@ -24,6 +26,14 @@ KV_URL="https://github.com/yassine20011/kvitals/releases/download/$KV_VER/$KV_ID
 KV_SHA="14126ce5ff447236566bee529db0850495d3bfa4c0b520c74c553d347364abac"
 KV_PKG="$ROOT/kvitals/$KV_ID-$KV_VER.plasmoid"
 KV_DEST="$HOME/.local/share/plasma/plasmoids/$KV_ID"
+
+# MouseTiler 脚本 id 与版本，升级时同步更新下方下载地址和校验和
+MT_ID="mousetiler"
+MT_VER="v6.5.0"
+MT_URL="https://github.com/rxappdev/MouseTiler/releases/download/$MT_VER/$MT_ID.kwinscript"
+MT_SHA="b8e9237ecae99856ebea888926fb95250e497f3856519d8f722198678a6b25d6"
+MT_PKG="$ROOT/mousetiler/$MT_ID-$MT_VER.kwinscript"
+MT_DEST="$HOME/.local/share/kwin/scripts/$MT_ID"
 
 # 布局默认值，仅 theme-install / theme-update 执行 apply 时生效
 OPACITY=90
@@ -69,6 +79,36 @@ kvitals_install() {
     kvitals_fetch
     printf '  [安装] KVitals %s\n' "$KV_VER"
     kpackagetool6 --type Plasma/Applet --install "$KV_PKG"
+}
+
+mousetiler_fetch() {
+    if [ -f "$MT_PKG" ] && \
+       [ "$(sha256sum "$MT_PKG" | cut -d' ' -f1)" = "$MT_SHA" ]; then
+        printf '  [缓存命中] MouseTiler %s\n' "$MT_VER"
+        return 0
+    fi
+    mkdir -p "$(dirname "$MT_PKG")"
+    printf '  [下载] MouseTiler %s\n' "$MT_VER"
+    curl -fL --retry 5 -o "$MT_PKG.part" "$MT_URL" || {
+        rm -f "$MT_PKG.part"
+        die "下载失败，若无法访问 GitHub 请先启动 ssr 代理后重试"
+    }
+    echo "$MT_SHA  $MT_PKG.part" | sha256sum -c - >/dev/null || {
+        rm -f "$MT_PKG.part"
+        die "校验失败，文件已删除"
+    }
+    mv "$MT_PKG.part" "$MT_PKG"
+    printf '  [完成] 下载并校验通过\n'
+}
+
+mousetiler_install() {
+    if [ -d "$MT_DEST" ]; then
+        printf '  [跳过] MouseTiler 已安装\n'
+        return 0
+    fi
+    mousetiler_fetch
+    printf '  [安装] MouseTiler %s\n' "$MT_VER"
+    kpackagetool6 --type KWin/Script --install "$MT_PKG"
 }
 
 stop_plasmashell() {
@@ -208,6 +248,9 @@ cmd_apply() {
     printf '==> 安装 KVitals\n'
     kvitals_install
 
+    printf '==> 安装 MouseTiler\n'
+    mousetiler_install
+
     printf '==> 重启 plasmashell，注册 plasmoid\n'
     stop_plasmashell
     start_plasmashell
@@ -263,9 +306,10 @@ cmd_backup() {
 }
 
 case "${1:-}" in
-    apply)   cmd_apply ;;
-    kvitals) kvitals_install ;;
-    restore) cmd_restore ;;
-    backup)  cmd_backup ;;
-    *) printf '用法：%s {apply|kvitals|restore|backup}\n' "${BASH_SOURCE[0]##*/}" >&2; exit 1 ;;
+    apply)      cmd_apply ;;
+    kvitals)    kvitals_install ;;
+    mousetiler) mousetiler_install ;;
+    restore)    cmd_restore ;;
+    backup)     cmd_backup ;;
+    *) printf '用法：%s {apply|kvitals|mousetiler|restore|backup}\n' "${BASH_SOURCE[0]##*/}" >&2; exit 1 ;;
 esac

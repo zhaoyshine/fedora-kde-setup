@@ -3,6 +3,9 @@
 set -euo pipefail
 
 DNF_CONF=/etc/dnf/dnf.conf
+FSTAB=/etc/fstab
+ZRAM_CONF=/etc/systemd/zram-generator.conf
+ZRAM_UNIT=systemd-zram-setup@zram0.service
 
 die() { printf '错误：%s\n' "$1" >&2; exit 1; }
 
@@ -43,6 +46,52 @@ flatpak_remote_drop() {
     fi
 }
 
+backup_file() {
+    local src="$1"
+    local dst="$src.bak-$(date +%F)"
+    [ -e "$dst" ] && { printf '  [已有] 备份 %s\n' "$dst"; return 0; }
+    printf '  [备份] %s\n' "$dst"
+    sudo cp -a "$src" "$dst"
+}
+
+setup_zram() {
+    printf '==> 关闭 zram\n'
+    if [ ! -e "$ZRAM_CONF" ]; then
+        printf '  [改动] 创建空 %s（zram-generator 以空配置为关闭）\n' "$ZRAM_CONF"
+        sudo touch "$ZRAM_CONF"
+    elif [ -s "$ZRAM_CONF" ]; then
+        backup_file "$ZRAM_CONF"
+        printf '  [改动] 清空 %s\n' "$ZRAM_CONF"
+        sudo truncate -s0 "$ZRAM_CONF"
+    else
+        printf '  [已有] %s 为空\n' "$ZRAM_CONF"
+    fi
+    if [ "$(systemctl is-enabled "$ZRAM_UNIT" 2>/dev/null)" = masked ]; then
+        printf '  [已有] %s 已 mask\n' "$ZRAM_UNIT"
+    else
+        printf '  [改动] mask %s\n' "$ZRAM_UNIT"
+        sudo systemctl mask "$ZRAM_UNIT"
+    fi
+}
+
+setup_swap() {
+    printf '==> 关闭 swap\n'
+    if [ -n "$(swapon --show --noheadings 2>/dev/null)" ]; then
+        printf '  [改动] 关闭当前 swap\n'
+        sudo swapoff -a
+    else
+        printf '  [已有] swap 未启用\n'
+    fi
+    if grep -qE '^[^#].*[[:space:]]swap[[:space:]]' "$FSTAB"; then
+        backup_file "$FSTAB"
+        printf '  [改动] 注释 %s 中的 swap 条目\n' "$FSTAB"
+        sudo sed -i -E 's|^([^#].*[[:space:]]swap[[:space:]].*)$|# \1|' "$FSTAB"
+        sudo systemctl daemon-reload
+    else
+        printf '  [已有] %s 无启用的 swap 条目\n' "$FSTAB"
+    fi
+}
+
 setup_dnf() {
     printf '==> dnf 配置\n'
     [ -f "$DNF_CONF" ] || die "未找到 $DNF_CONF"
@@ -70,4 +119,6 @@ setup_boot() {
 setup_dnf
 setup_flatpak
 setup_boot
+setup_zram
+setup_swap
 printf '==> 完成\n'
