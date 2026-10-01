@@ -213,12 +213,16 @@ plugin=org.kde.plasma.kvitals
 popupHeight=375
 popupWidth=432
 
+[Containments][416][Applets][444][Configuration][ConfigDialog]
+DialogHeight=830
+DialogWidth=1529
+
 [Containments][416][Applets][444][Configuration][General]
 displayMode=text
 fontFamily=SF Pro Text 10pt
 iconSize=14
 labelOpacity=1
-pinnedMetrics=cpu/temp,gpu:gpu0/temp,disk:nvme0n1/temp,net/up,net/down
+pinnedMetrics=cpu/temp,gpu:gpu0/temp,disk:nvme0n1/temp,ram/used,net/up,net/down,cpu/usage,gpu:gpu0/usage
 separatorOpacity=0
 showSeparators=false
 updateInterval=3000
