@@ -174,6 +174,10 @@ plugin=org.kde.plasma.brightness
 immutability=1
 plugin=org.kde.plasma.bluetooth
 
+[Containments][416][Applets][420][Applets][445]
+immutability=1
+plugin=org.kde.plasma.mediacontroller
+
 [Containments][416][Applets][420][General]
 extraItems=org.kde.plasma.networkmanagement,org.kde.plasma.keyboardlayout,org.kde.plasma.printmanager,org.kde.kscreen,org.kde.plasma.volume,org.kde.plasma.bluetooth,org.kde.plasma.battery,org.kde.plasma.brightness,org.kde.plasma.keyboardindicator,org.kde.plasma.weather,org.kde.plasma.cameraindicator,org.kde.plasma.clipboard,org.kde.plasma.devicenotifier,org.kde.plasma.manage-inputmethod,org.kde.plasma.mediacontroller,org.kde.plasma.notifications
 hiddenItems=org.kde.plasma.clipboard,org.kde.plasma.devicenotifier,org.kde.plasma.manage-inputmethod,org.kde.plasma.mediacontroller,org.kde.plasma.notifications,org.kde.plasma.keyboardindicator,org.kde.plasma.weather,org.kde.kscreen,org.kde.plasma.keyboardlayout,org.kde.plasma.printmanager,org.kde.plasma.cameraindicator,org.kde.plasma.vault,org.kde.kdeconnect,org.kde.plasma.battery,Arch-Update,chrome_status_icon_1,discord,plasmashell_microphone,steam,spotify,telegram,slack
