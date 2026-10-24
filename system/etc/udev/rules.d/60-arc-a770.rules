@@ -1,0 +1,3 @@
+# Intel Arc A770: cap power at 110 W and remove the HDMI audio function.
+ACTION=="add|change", SUBSYSTEM=="hwmon", ATTR{name}=="xe", ATTR{power2_max}="110000000"
+ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x8086", ATTR{device}=="0x4f90", RUN+="/bin/sh -c 'echo 1 > /sys%p/remove'"
