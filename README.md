@@ -52,7 +52,6 @@ make restore         # 用 dotfiles/ 与 system/ 恢复设置
 - `theme-install` / `theme-update` / `restore` 之后必须注销并重新登录。
 - 通过 GUI 或手工修改 dock / KVitals / 壁纸 / 快捷键 / 输入法 / 窗口管理 / 电源 / udev 规则 / swap 后，执行 `make backup` 再 `git commit`。
 - 恢复到历史版本：`git checkout <commit> -- dotfiles/ system/ swap.conf` 再 `make restore`。
-- 布局默认值（dock 厚度、固定的应用、KVitals 指标）修改 `desktop.sh` 顶部变量，仅影响 `theme-install` / `theme-update`。
 - 系统配置快照由 sudo 写回 `/etc`，`restore` 会重载 udev、sysctl 与 systemd。
 - `backup` 从 `/etc/fstab` 提取 swapfile 条目并把路径、大小写入 `swap.conf`；`restore` 据此重建 swapfile 并确保 `/etc/fstab` 含对应条目，`/etc/fstab` 的其余条目属于目标机，不纳入快照。
 - `restore` 会把 Plasma 布局绑定到当前活动，并把 Plasma 壁纸与 Ghostty 配置中的旧主目录改为当前 `$HOME`；多显示器布局仍按源机记录，跨机器恢复后检查面板位置。

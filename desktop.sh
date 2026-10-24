@@ -3,7 +3,6 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO="$ROOT/macos-tahoe-liquid-kde"
 DOTFILES="$ROOT/dotfiles"
 SYSTEM_SRC="$ROOT/system"
 CONFIG_DIR="$HOME/.config"
@@ -45,13 +44,6 @@ MT_URL="https://github.com/rxappdev/MouseTiler/releases/download/$MT_VER/$MT_ID.
 MT_SHA="b8e9237ecae99856ebea888926fb95250e497f3856519d8f722198678a6b25d6"
 MT_PKG="$ROOT/mousetiler/$MT_ID-$MT_VER.kwinscript"
 MT_DEST="$HOME/.local/share/kwin/scripts/$MT_ID"
-
-# 布局默认值，仅 theme-install / theme-update 执行 apply 时生效
-OPACITY=90
-DOCK_OPACITY=12
-DOCK_THICKNESS=64
-DOCK_PINS="applications:systemsettings.desktop,applications:org.kde.discover.desktop,preferred://filemanager,applications:org.localsend.localsend_app.desktop,preferred://browser,applications:com.mitchellh.ghostty.desktop,applications:com.visualstudio.code.desktop,applications:zcode.desktop"
-KV_METRICS="cpu/temp,gpu:gpu0/temp,disk:nvme0n1/temp,net/up,net/down"
 
 # swap 设置由 backup 写入 swap.conf，restore 据此重建；/etc/fstab 其余条目与目标机绑定
 SWAP_CONF="$ROOT/swap.conf"
@@ -147,13 +139,6 @@ start_plasmashell() {
     sleep 1
 }
 
-apply_transparency() {
-    local script="$REPO/src/scripts/set-transparency"
-    [ -f "$script" ] || { printf '  [失败] 未找到 %s（上游仓库可能未拉取完整）\n' "$script" >&2; exit 1; }
-    printf '  应用透明度：全局 %s%%，dock %s%%\n' "$OPACITY" "$DOCK_OPACITY"
-    python3 "$script" "$OPACITY" --dock "$DOCK_OPACITY" --apply
-}
-
 ensure_qdbus() {
     [ -n "$QDBUS" ] && return 0
     local c
@@ -164,99 +149,6 @@ ensure_qdbus() {
         fi
     done
     die "未找到 qdbus，请先安装 qt6-qttools"
-}
-
-layout_script() {
-    cat <<EOF
-(function () {
-  var metrics = "$KV_METRICS";
-  var pins = "$DOCK_PINS";
-  var ps = panels();
-  for (var i = 0; i < ps.length; i++) {
-    var p = ps[i];
-    var ids = p.widgetIds;
-    var dock = false;
-    var bar = false;
-    for (var j = 0; j < ids.length; j++) {
-      var t = p.widgetById(ids[j]);
-      if (!t) continue;
-      if (t.type === "org.kde.mac.tahoe.liquid.icontasks") dock = true;
-      if (t.type === "org.kde.plasma.digitalclock") bar = true;
-    }
-    if (dock) {
-      p.location = "left";
-      p.height = $DOCK_THICKNESS;
-      p.hiding = "none";
-      for (var j = 0; j < ids.length; j++) {
-        var w = p.widgetById(ids[j]);
-        if (w && w.type === "org.kde.mac.tahoe.liquid.icontasks") {
-          w.currentConfigGroup = ["General"];
-          w.writeConfig("launchers", pins);
-        }
-      }
-    }
-    if (bar) {
-      var kv = null;
-      for (var j = 0; j < ids.length; j++) {
-        var w = p.widgetById(ids[j]);
-        if (w && w.type === "org.kde.plasma.kvitals") kv = w;
-      }
-      if (!kv && p.addWidget) kv = p.addWidget("org.kde.plasma.kvitals");
-      if (kv) {
-        kv.currentConfigGroup = ["General"];
-        kv.writeConfig("displayMode", "text");
-        kv.writeConfig("fontFamily", "SF Pro Text 10pt");
-        kv.writeConfig("iconSize", 14);
-        kv.writeConfig("labelOpacity", 1);
-        kv.writeConfig("pinnedMetrics", metrics);
-        kv.writeConfig("separatorOpacity", 0);
-        kv.writeConfig("showSeparators", false);
-        kv.writeConfig("updateInterval", 3000);
-        kv.currentConfigGroup = [];
-        kv.writeConfig("popupHeight", 375);
-        kv.writeConfig("popupWidth", 432);
-        var kvId = kv.id;
-        var order = [];
-        var placed = false;
-        for (var j = 0; j < ids.length; j++) {
-          var w = p.widgetById(ids[j]);
-          if (!w || w.id === kvId) continue;
-          if (!placed && w.type === "org.kde.plasma.systemtray") {
-            order.push(kvId);
-            placed = true;
-          }
-          order.push(ids[j]);
-        }
-        if (!placed) order.unshift(kvId);
-        p.currentConfigGroup = ["General"];
-        p.writeConfig("AppletOrder", order.join(";"));
-      }
-    }
-  }
-})();
-EOF
-}
-
-run_layout_script() {
-    local script="$1" n=0
-    for n in 1 2 3 4 5; do
-        if "$QDBUS" org.kde.plasmashell /PlasmaShell \
-             org.kde.PlasmaShell.evaluateScript "$script" >/dev/null 2>&1; then
-            return 0
-        fi
-        sleep 3
-    done
-    return 1
-}
-
-apply_layout() {
-    ensure_qdbus
-    printf '  [改动] 面板布局：dock 靠左常显 %spx，KVitals 置顶栏\n' "$DOCK_THICKNESS"
-    local script
-    script="$(layout_script)"
-    run_layout_script "$script" || die "plasmashell 拒绝执行脚本，面板布局未变更"
-    sleep 2
-    run_layout_script "$script" || die "plasmashell 拒绝执行脚本，面板布局未变更"
 }
 
 cmd_apply() {
@@ -273,12 +165,6 @@ cmd_apply() {
     printf '==> 重启 plasmashell，注册 plasmoid\n'
     stop_plasmashell
     start_plasmashell
-
-    printf '==> 面板布局\n'
-    apply_layout
-
-    printf '==> 应用主题参数\n'
-    apply_transparency
 }
 
 normalize_restored_config() {
