@@ -98,6 +98,7 @@ tiles={"layoutDirection":"horizontal","tiles":[{"width":0.25},{"width":0.5},{"wi
 [Wayland]
 InputMethod[$e]=/usr/share/applications/org.fcitx.Fcitx5.desktop
 VirtualKeyboardEnabled=true
+VirtualKeyboardMode=0
 
 [Xwayland]
 Scale=1.2
@@ -106,5 +107,5 @@ Scale=1.2
 BorderSize=Tiny
 ButtonsOnLeft=XIA
 ButtonsOnRight=
-library=org.kde.kwin.aurorae
+library=org.kde.kwin.aurorae.v2
 theme=__aurorae__svg__MacTahoeLiquidKde-Light

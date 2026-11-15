@@ -370,7 +370,3 @@ toggle do not disturb=none,none,切换勿扰模式
 
 [services][com.mitchellh.ghostty.desktop]
 _launch=none
-
-[services][org.kde.spectacle.desktop]
-CurrentMonitorScreenShot=none
-OpenWithoutScreenshot=none
