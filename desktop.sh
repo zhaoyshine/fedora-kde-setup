@@ -313,8 +313,8 @@ cmd_backup() {
     printf '==> 将 swap 设置回写至仓库快照\n'
     write_swap_conf
     printf '==> 快照已更新，仓库改动如下，请审阅后执行 git commit：\n'
-    git -C "$ROOT" status --short -- dotfiles/ system/ swap.conf
-    git -C "$ROOT" diff -- dotfiles/ system/ swap.conf
+    git -C "$ROOT" --no-pager status --short -- dotfiles/ system/ swap.conf
+    git -C "$ROOT" --no-pager diff -- dotfiles/ system/ swap.conf
     printf '（无输出表示快照未变更，无需提交）\n'
 }
 

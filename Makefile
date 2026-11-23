@@ -51,12 +51,12 @@ theme-pull:
 theme-check:
 	@[ -d "$(REPO)/.git" ] || { echo "  主题仓库未拉取，请先执行 make theme-pull"; exit 1; }
 	@echo "==> 安装前检查（不修改系统）"
-	@cd "$(REPO)" && sudo ./install $(FLAGS) --preflight
+	@cd "$(REPO)" && sudo ./src/scripts/installer_backend.py install $(FLAGS) --preflight
 
 theme-install:
 	@[ -d "$(REPO)/.git" ] || { echo "  主题仓库未拉取，请先执行 make theme-pull"; exit 1; }
 	@echo "==> 安装主题 $(FLAGS)"
-	@cd "$(REPO)" && sudo ./install $(FLAGS)
+	@cd "$(REPO)" && sudo ./src/scripts/installer_backend.py install $(FLAGS)
 	@./desktop.sh apply
 	@echo "==> 完成，请注销并重新登录。"
 	@echo "    个人设置（dock 固定的应用、KVitals 指标、壁纸）通过 make restore 恢复。"
@@ -64,7 +64,7 @@ theme-install:
 theme-update:
 	@[ -d "$(REPO)/.git" ] || { echo "  主题仓库未拉取，请先执行 make theme-pull"; exit 1; }
 	@echo "==> 重新安装主题 $(FLAGS)"
-	@cd "$(REPO)" && sudo ./install $(FLAGS)
+	@cd "$(REPO)" && sudo ./src/scripts/installer_backend.py install $(FLAGS)
 	@./desktop.sh apply
 	@echo "==> 完成，请注销并重新登录。"
 	@echo "    如需固化当前设置，执行 make backup。"
@@ -72,7 +72,7 @@ theme-update:
 theme-uninstall:
 	@[ -d "$(REPO)/.git" ] || { echo "  主题仓库未拉取，请先执行 make theme-pull"; exit 1; }
 	@echo "==> 卸载主题（与安装使用相同的 FLAGS）"
-	@cd "$(REPO)" && sudo ./uninstall $(FLAGS)
+	@cd "$(REPO)" && sudo ./src/scripts/installer_backend.py uninstall $(FLAGS)
 	@echo "==> 完成，请注销并重新登录。"
 	@echo "    注意：grub、原面板布局、GTK4 配置无法还原。"
 
