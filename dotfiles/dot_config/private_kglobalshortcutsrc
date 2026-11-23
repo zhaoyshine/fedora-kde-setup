@@ -14,10 +14,6 @@ B3131F5926BD85F37CCF73B2EE5AA442-Ctrl+0=none,none,Electron shortcut Ctrl+0
 E3F02C79770D9904C9D3AF1195664019-=none,none,Electron shortcut\s
 _k_friendly_name=LM-Studio
 
-[kaccess]
-Toggle Screen Reader On and Off=Meta+Alt+S,Meta+Alt+S,切换屏幕阅读器开关
-_k_friendly_name=无障碍辅助
-
 [kmix]
 _k_friendly_name=音量
 decrease_microphone_volume=Microphone Volume Down,Microphone Volume Down,降低麦克风音量
@@ -138,8 +134,8 @@ Mouse Tiler: Toggle Move To Previous Virtual Desktop=Meta+Ctrl+V,none,Mouse Tile
 Mouse Tiler: Toggle Tiling Suggestions=Meta+Ctrl+S,none,Mouse Tiler: Toggle Tiling Suggestions
 Mouse Tiler: Toggle Visibility=Meta+Space,none,Mouse Tiler: Toggle Visibility
 Move Tablet to Next LogicalOutput=none,none,移动数位板到下一个输出设备
-MoveMouseToCenter=Meta+F6,Meta+F6,移动鼠标到中央
-MoveMouseToFocus=Meta+F5,Meta+F5,移动鼠标到焦点
+MoveMouseToCenter=Meta+F6,Meta+F6,指针移至屏幕中心
+MoveMouseToFocus=Meta+F5,Meta+F5,指针移至焦点窗口中心
 MoveZoomDown=none,none,将缩放区域向下移动
 MoveZoomLeft=none,none,将缩放区域向左移动
 MoveZoomRight=none,none,将缩放区域向右移动
@@ -197,6 +193,7 @@ Switch to Screen Below=none,none,切换到下方屏幕
 Switch to Screen to the Left=none,none,切换到左侧屏幕
 Switch to Screen to the Right=none,none,切换到右侧屏幕
 Toggle Night Color=none,none,暂停/继续夜间色温
+Toggle Show Compositing=none,none,开启/关闭显示特效合成活动指示器效果
 Toggle Window Raise/Lower=none,none,提升/降低窗口
 ToggleCurrentThumbnail=Meta+Ctrl+T,Meta+Ctrl+T,显示/隐藏当前窗口缩略图
 Walk Through Windows=Alt+Tab\tMeta+Tab,Alt+Tab\tMeta+Tab,遍历窗口
@@ -295,6 +292,36 @@ view_actual_size=Meta+0,Meta+0,缩放为实际大小(A)
 view_zoom_in=Meta++\tMeta+=,Meta++\tMeta+=,放大(I)
 view_zoom_out=Meta+-,Meta+-,缩小(O)
 
+[kwin][$InverseAction]
+Cycle Overview=Cycle Overview Opposite
+Increase Opacity=Decrease Opacity
+MoveZoomDown=MoveZoomUp
+MoveZoomRight=MoveZoomLeft
+Switch One Desktop Up=Switch One Desktop Down
+Switch One Desktop to the Right=Switch One Desktop to the Left
+Switch Window Down=Switch Window Up
+Switch Window Right=Switch Window Left
+Switch to Next Desktop=Switch to Previous Desktop
+Switch to Next Screen=Switch to Previous Screen
+Switch to Screen Above=Switch to Screen Below
+Switch to Screen to the Right=Switch to Screen to the Left
+Walk Through Windows (Reverse)=Walk Through Windows
+Walk Through Windows Alternative (Reverse)=Walk Through Windows Alternative
+Walk Through Windows of Current Application=Walk Through Windows of Current Application (Reverse)
+Walk Through Windows of Current Application Alternative=Walk Through Windows of Current Application Alternative (Reverse)
+Window Grow Vertical=Window Shrink Vertical
+Window One Desktop Up=Window One Desktop Down
+Window One Desktop to the Left=Window One Desktop to the Right
+Window One Screen Down=Window One Screen Up
+Window One Screen to the Left=Window One Screen to the Right
+Window Pack Left=Window Pack Right
+Window Pack Up=Window Pack Down
+Window Raise=Window Lower
+Window Shrink Horizontal=Window Grow Horizontal
+Window to Previous Desktop=Window to Next Desktop
+Window to Previous Screen=Window to Next Screen
+view_zoom_out=view_zoom_in
+
 [mediacontrol]
 _k_friendly_name=媒体控制器
 mediavolumedown=none,none,媒体音量降低
@@ -352,7 +379,7 @@ activate widget 56=Alt+F1,none,激活 应用程序启动器 小部件
 activate widget 85=Alt+F1,none,激活 应用程序启动器 小部件
 clear history=none,none,清除通知历史记录
 clear-history=none,none,清除剪贴板历史(L)
-clipboard_action=Meta+Ctrl+X,Meta+Ctrl+X,自动弹出操作菜单
+clipboard_action=Meta+Ctrl+X,none,Toggle Automatic Popping Up of Action Menu
 cycle-panels=Meta+Alt+P,Meta+Alt+P,在面板之间移动键盘焦点
 cycleNextAction=none,none,下一条历史记录
 cyclePrevAction=none,none,上一条历史记录
@@ -363,10 +390,13 @@ previous activity=Meta+Shift+A,none,遍历活动 (反向)
 repeat_action=none,none,在当前剪贴板上手动执行操作
 show dashboard=Ctrl+F12,Ctrl+F12,显示桌面
 show-barcode=none,none,显示条形码(S)…
-show-on-mouse-pos=Meta+V,Meta+V,在鼠标位置显示剪贴板项目
+show-on-mouse-pos=none,Meta+V,在鼠标位置显示剪贴板项目
 switch to next activity=none,none,切换到下一个活动
 switch to previous activity=none,none,切换到上一个活动
 toggle do not disturb=none,none,切换勿扰模式
 
 [services][com.mitchellh.ghostty.desktop]
 _launch=none
+
+[services][mac-tahoe-clipboard.desktop]
+_launch=Meta+V
