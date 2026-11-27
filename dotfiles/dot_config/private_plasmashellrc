@@ -2,10 +2,11 @@
 floating=0
 panelVisibility=0
 shell=org.kde.plasma.desktop
-
+panelOpacity=2
+floatingApplets=1
 [PlasmaViews][Panel 562]
 floating=0
-floatingApplets=0
+floatingApplets=1
 panelLengthMode=1
 panelOpacity=2
 panelVisibility=0
